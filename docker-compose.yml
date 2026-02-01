@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "${INFLUX_PORT}:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_USER}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+
+  api:
+    build: ./api
+    ports:
+      - "${API_PORT}:8000"
+    depends_on:
+      - influxdb
+    env_file:
+      - .env
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "${DASHBOARD_PORT}:8501"
+    depends_on:
+      - api
+    env_file:
+      - .env

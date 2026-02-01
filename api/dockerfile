@@ -1,0 +1,25 @@
+# api/Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system deps for uvicorn and pillow
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --default-timeout=100 --retries=10 -r requirements.txt
+
+# Copy source code
+COPY . .
+
+# Expose API port
+EXPOSE 8000
+
+# CMD must point to uvicorn
+CMD ["uvicorn", "http_receiver:app", "--host", "0.0.0.0", "--port", "8000"]
+

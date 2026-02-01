@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+coverage.xml
+*.egg-info/
+dist/
+build/
+*.egg
+*.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docker
+*.log
+docker-compose.override.yml
+docker-compose.*.yml
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+credentials.json
+*.pem
+*.key
+*.cert
+
+# InfluxDB / database local data (if you ever mount volumes locally)
+influxdb-data/
+influxdb2-data/
+*.bolt
+*.wal
+
+# Streamlit
+.streamlit/
+*.streamlit/
+
+# Testing / temp files
+htmlcov/
+.tox/
+.nox/
+.cache/
+nosetests.xml
+test-results/
+tmp/
+temp/
+
+# Dependency directories (if you ever use npm/yarn in frontend parts)
+node_modules/
+yarn-error.log
+
+# Keep these (useful examples)
+# !requirements-dev.txt
+# !.env.example
