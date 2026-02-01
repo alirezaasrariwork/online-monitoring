@@ -23,8 +23,8 @@ INFLUX_BUCKET  = os.getenv("INFLUX_BUCKET",  "monitoring")
 INFLUX_ORG     = os.getenv("INFLUX_ORG",     "my-org")
 INFLUX_TOKEN   = os.getenv("INFLUX_TOKEN",   "my-token")
 
-REFRESH_SEC    = 5
-HISTORY_RANGE  = "-2h"           # adjust as needed: -1h, -6h, -24h, ...
+REFRESH_SEC    = 20
+HISTORY_RANGE  = "-15m"           # adjust as needed: -1h, -6h, -24h, ...
 
 # ────────────────────────────────────────────────
 #               InfluxDB Client (cached)
@@ -61,7 +61,7 @@ def style_row(row):
 # ────────────────────────────────────────────────
 #               LIVE section
 # ────────────────────────────────────────────────
-st.subheader("⚡ Live Signals (refreshes every 5s)")
+st.subheader("⚡ Live Signals (refreshes every 20s)")
 st_autorefresh(interval=REFRESH_SEC * 1000, key="live_refresh")
 
 signals = ["a", "b", "c"]
