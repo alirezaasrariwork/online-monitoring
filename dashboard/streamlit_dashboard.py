@@ -16,15 +16,18 @@ st.title("🖥️ Live & Historical Signal Monitoring")
 # ────────────────────────────────────────────────
 #               Configuration
 # ────────────────────────────────────────────────
-API_BASE_URL   = os.getenv("API_BASE_URL",   "http://localhost:8000")
-INFLUX_HOST    = os.getenv("INFLUX_HOST",    "influxdb")           # ← use service name in docker-compose
-INFLUX_PORT    = int(os.getenv("INFLUX_PORT", 8086))
-INFLUX_BUCKET  = os.getenv("INFLUX_BUCKET",  "monitoring")
-INFLUX_ORG     = os.getenv("INFLUX_ORG",     "my-org")
-INFLUX_TOKEN   = os.getenv("INFLUX_TOKEN",   "my-token")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+INFLUX_HOST = os.getenv(
+    "INFLUX_HOST", "influxdb"
+)  # ← use service name in docker-compose
+INFLUX_PORT = int(os.getenv("INFLUX_PORT", 8086))
+INFLUX_BUCKET = os.getenv("INFLUX_BUCKET", "monitoring")
+INFLUX_ORG = os.getenv("INFLUX_ORG", "my-org")
+INFLUX_TOKEN = os.getenv("INFLUX_TOKEN", "my-token")
 
-REFRESH_SEC    = 20
-HISTORY_RANGE  = "-15m"           # adjust as needed: -1h, -6h, -24h, ...
+REFRESH_SEC = 20
+HISTORY_RANGE = "-15m"  # adjust as needed: -1h, -6h, -24h, ...
+
 
 # ────────────────────────────────────────────────
 #               InfluxDB Client (cached)
@@ -34,8 +37,10 @@ def get_influx_client():
     url = f"http://{INFLUX_HOST}:{INFLUX_PORT}"
     return InfluxDBClient(url=url, token=INFLUX_TOKEN, org=INFLUX_ORG)
 
+
 client = get_influx_client()
 query_api = client.query_api()
+
 
 # ────────────────────────────────────────────────
 #               Color / Style helpers
@@ -43,20 +48,22 @@ query_api = client.query_api()
 def style_status(val):
     colors = {
         "CRITICAL": "background-color: #dc3545; color: white; font-weight: bold;",
-        "WARN":     "background-color: #fd7e14; color: black; font-weight: bold;",
-        "OK":       "background-color: #198754; color: white;",
+        "WARN": "background-color: #fd7e14; color: black; font-weight: bold;",
+        "OK": "background-color: #198754; color: white;",
     }
     return colors.get(val, "")
 
+
 def style_row(row):
     styles = [""] * len(row)
-    level = row.get("Level", "OK")               # ← capital L
+    level = row.get("Level", "OK")  # ← capital L
     try:
         level_col_idx = row.index.get_loc("Level")
         styles[level_col_idx] = style_status(level)
     except KeyError:
         pass  # silently skip if column missing (defensive)
     return styles
+
 
 # ────────────────────────────────────────────────
 #               LIVE section
@@ -80,40 +87,62 @@ for sig in signals:
     else:
         val = round(float(val), 2)
         if sig == "a":
-            level, alarm, sugg = "CRITICAL" if val > 80 else "WARN" if val > 60 else "OK", 80 if val > 80 else 60 if val > 60 else 0, "Cool down" if val > 80 else "Reduce load" if val > 60 else "Normal"
+            level, alarm, sugg = (
+                "CRITICAL" if val > 80 else "WARN" if val > 60 else "OK",
+                80 if val > 80 else 60 if val > 60 else 0,
+                "Cool down" if val > 80 else "Reduce load" if val > 60 else "Normal",
+            )
             thresh = 80 if val > 80 else 60
         elif sig == "b":
-            level, alarm, sugg = "CRITICAL" if val > 120 else "WARN" if val > 90 else "OK", 120 if val > 120 else 90 if val > 90 else 0, "Release pressure" if val > 120 else "Monitor" if val > 90 else "Normal"
+            level, alarm, sugg = (
+                "CRITICAL" if val > 120 else "WARN" if val > 90 else "OK",
+                120 if val > 120 else 90 if val > 90 else 0,
+                "Release pressure"
+                if val > 120
+                else "Monitor"
+                if val > 90
+                else "Normal",
+            )
             thresh = 120 if val > 120 else 90
         else:  # c
-            level, alarm, sugg = "CRITICAL" if val > 7 else "WARN" if val > 4 else "OK", 7 if val > 7 else 4 if val > 4 else 0, "Stop machine" if val > 7 else "Maintenance" if val > 4 else "Normal"
+            level, alarm, sugg = (
+                "CRITICAL" if val > 7 else "WARN" if val > 4 else "OK",
+                7 if val > 7 else 4 if val > 4 else 0,
+                "Stop machine" if val > 7 else "Maintenance" if val > 4 else "Normal",
+            )
             thresh = 7 if val > 7 else 4
 
-    live_data.append({
-        "Signal": sig.upper(),
-        "Value": val,
-        "Threshold": thresh,
-        "Level": level,
-        "Suggestion": sugg
-    })
+    live_data.append(
+        {
+            "Signal": sig.upper(),
+            "Value": val,
+            "Threshold": thresh,
+            "Level": level,
+            "Suggestion": sugg,
+        }
+    )
 
 live_df = pd.DataFrame(live_data)
 st.dataframe(
-    live_df.style.apply(style_row, axis=1),
-    use_container_width=True,
-    hide_index=True
+    live_df.style.apply(style_row, axis=1), use_container_width=True, hide_index=True
 )
 
 # Quick metrics row (nice to have)
 cols = st.columns(3)
 for i, row in enumerate(live_data):
     with cols[i]:
-        delta_color = "normal" if row["Level"] == "OK" else "inverse" if row["Level"] == "CRITICAL" else "off"
+        delta_color = (
+            "normal"
+            if row["Level"] == "OK"
+            else "inverse"
+            if row["Level"] == "CRITICAL"
+            else "off"
+        )
         st.metric(
             label=f"Signal {row['Signal']}",
             value=row["Value"] if row["Value"] is not None else "—",
             delta=row["Level"],
-            delta_color=delta_color
+            delta_color=delta_color,
         )
 
 # ────────────────────────────────────────────────
@@ -147,23 +176,167 @@ try:
     else:
         # Cleanup
         df["Signal"] = df["Signal"].str.upper()
-        df["Value"]  = pd.to_numeric(df["Value"], errors="coerce").round(2)
-        df["_time"]  = pd.to_datetime(df["_time"])
+        df["Value"] = pd.to_numeric(df["Value"], errors="coerce").round(2)
+        df["_time"] = pd.to_datetime(df["_time"])
         df = df[["_time", "Signal", "Value", "Level", "Alarm", "Suggestion"]]
 
         # Optional: color whole row based on level
         st.dataframe(
             df.style.apply(style_row, axis=1, subset=["Level"]),
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
         )
 
         # Optional: simple line chart per signal
         if len(df) > 5:
             st.subheader("Trend (last values)")
-            chart_df = df.pivot(index="_time", columns="Signal", values="Value").tail(200)
+            chart_df = df.pivot(index="_time", columns="Signal", values="Value").tail(
+                200
+            )
             st.line_chart(chart_df)
 
 except Exception as e:
     st.error(f"Query failed: {e}")
     st.info("Check InfluxDB is running and credentials are correct (.env)")
+
+# ────────────────────────────────────────────────
+#               DGA DIAGNOSTIC PANEL
+# ────────────────────────────────────────────────
+st.subheader("🧪 DGA Diagnostic Panel")
+
+# Fetch latest DGA result from API
+dga_data = None
+try:
+    r = requests.get(f"{API_BASE_URL}/signal/dga", timeout=5)
+    if r.status_code == 200:
+        dga_data = r.json()
+except Exception:
+    dga_data = None
+
+if not dga_data or "error" in dga_data:
+    st.info("No DGA data yet — wait for generator to send some samples.")
+else:
+    raw = dga_data.get("raw_gases", {})
+    sugg = dga_data.get("suggestions", {})
+    tdcg = float(dga_data.get("tdcg", 0.0))
+    ts = dga_data.get("latest_timestamp", "")
+
+    # --- TDCG condition classification (IEEE style) ---
+    if tdcg < 720:
+        cond_level = 1
+        cond_desc = "Normal – routine sampling"
+    elif tdcg <= 1920:
+        cond_level = 2
+        cond_desc = "Above normal – monthly sampling + trend watch"
+    elif tdcg <= 4630:
+        cond_level = 3
+        cond_desc = "Abnormal – investigate + plan repairs"
+    else:
+        cond_level = 4
+        cond_desc = "Critical – urgent action, consider de-energize"
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Latest DGA Sample**")
+        st.write(f"Timestamp: `{ts}`")
+
+        gas_df = pd.DataFrame([{"Gas": k, "Value (ppm)": v} for k, v in raw.items()])
+        st.dataframe(gas_df, hide_index=True, use_container_width=True)
+
+        st.metric(
+            "TDCG (ppm)",
+            value=round(tdcg, 1),
+            delta=f"Condition {cond_level}: {cond_desc}",
+        )
+
+        st.markdown("### 🔍 What is TDCG?")
+        st.markdown(
+            r"""
+TDCG (**Total Dissolved Combustible Gas**) is defined as:
+
+
+
+\[
+TDCG = H_2 + CH_4 + C_2H_6 + C_2H_4 + C_2H_2
+\]
+
+
+
+It is a key indicator of transformer insulation health based on dissolved gas analysis.
+"""
+        )
+
+        st.markdown("**IEEE TDCG Condition Levels**")
+        cond_table = pd.DataFrame(
+            [
+                {
+                    "No.": 1,
+                    "TDCG range (ppm)": "< 720",
+                    "Condition": "1 – Normal",
+                    "Action": "Routine sampling",
+                },
+                {
+                    "No.": 2,
+                    "TDCG range (ppm)": "721 – 1920",
+                    "Condition": "2 – Above normal",
+                    "Action": "Monthly sampling + trend watch",
+                },
+                {
+                    "No.": 3,
+                    "TDCG range (ppm)": "1921 – 4630",
+                    "Condition": "3 – Abnormal",
+                    "Action": "Investigate + plan repairs",
+                },
+                {
+                    "No.": 4,
+                    "TDCG range (ppm)": "> 4630",
+                    "Condition": "4 – Critical",
+                    "Action": "Urgent action, consider de-energize",
+                },
+            ]
+        )
+        st.table(cond_table)
+
+    with col2:
+        st.markdown("**Diagnostic Methods (Latest)**")
+        st.write(f"**IEEE:** {sugg.get('IEEE_based', '')}")
+        st.write(f"**Rogers / IEC:** {sugg.get('Rogers_IEC_based', '')}")
+        st.write(f"**Duval Triangle:** {sugg.get('Duval_based', '')}")
+        st.write(f"**Doernenburg:** {sugg.get('Doernenburg_based', '')}")
+
+        st.markdown("### 📉 Historical TDCG Trend")
+
+        try:
+            flux_dga = f'''
+            from(bucket: "{INFLUX_BUCKET}")
+      |> range(start: {HISTORY_RANGE})
+      |> filter(fn: (r) => r["_measurement"] == "dga_signals")
+      |> filter(fn: (r) => r["_field"] == "TDCG")
+      |> keep(columns: ["_time", "_value"])
+      |> sort(columns: ["_time"], desc: false)
+            '''
+            dga_tables = query_api.query_data_frame(flux_dga)
+
+            if isinstance(dga_tables, list) and dga_tables:
+                dga_df = pd.concat(
+                    [t for t in dga_tables if not t.empty], ignore_index=True
+                )
+            elif not isinstance(dga_tables, list) and not dga_tables.empty:
+                dga_df = dga_tables
+            else:
+                dga_df = pd.DataFrame()
+
+            if dga_df.empty:
+                st.info("No historical DGA data yet.")
+            else:
+                dga_df["_time"] = pd.to_datetime(dga_df["_time"])
+                dga_df = dga_df.rename(
+                    columns={"_time": "Time", "_value": "TDCG (ppm)"}
+                )
+                st.dataframe(dga_df, hide_index=True, use_container_width=True)
+
+                dga_df = dga_df.set_index("Time")
+                st.line_chart(dga_df["TDCG (ppm)"])
+        except Exception as e:
+            st.error(f"DGA query failed: {e}")
